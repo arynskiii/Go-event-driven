@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"github.com/ThreeDotsLabs/watermill-redisstream/pkg/redisstream"
 	"github.com/labstack/echo/v4"
 	stdHTTP "net/http"
 	"tickets/worker"
@@ -16,11 +17,13 @@ type Service struct {
 }
 
 func New(
+	publisher *redisstream.Publisher,
+	subscriber *redisstream.Subscriber,
 	spreadsheetsService worker.SpreadsheetsAPI,
 	receiptsService worker.ReceiptsService,
 ) Service {
-	w := worker.NewWorker(spreadsheetsService, receiptsService)
-	echoRouter := ticketsHttp.NewHttpRouter(w)
+	w := worker.NewWorker(spreadsheetsService, receiptsService, subscriber)
+	echoRouter := ticketsHttp.NewHttpRouter(publisher, w)
 
 	return Service{
 		echoRouter: echoRouter,

@@ -1,10 +1,9 @@
 package http
 
 import (
-	"net/http"
-	"tickets/worker"
-
+	"github.com/ThreeDotsLabs/watermill/message"
 	"github.com/labstack/echo/v4"
+	"net/http"
 )
 
 type ticketsConfirmationRequest struct {
@@ -19,13 +18,17 @@ func (h Handler) PostTicketsConfirmation(c echo.Context) error {
 	}
 
 	for _, ticket := range request.Tickets {
-		h.worker.Send(worker.Message{
-			Task:     worker.TaskIssueReceipt,
-			TicketID: ticket,
-		}, worker.Message{
-			Task:     worker.TaskAppendToTracker,
-			TicketID: ticket,
-		})
+		if err := h.RedisPublisher.Publish("issue-receipt", &message.Message{
+			Payload: []byte(ticket),
+		}); err != nil {
+			return err
+		}
+
+		if err := h.RedisPublisher.Publish("append-to-tracker", &message.Message{
+			Payload: []byte(ticket),
+		}); err != nil {
+			return err
+		}
 	}
 
 	return c.NoContent(http.StatusOK)

@@ -23,14 +23,7 @@ func main() {
 		logger.Error("Failed to initialize subscriber", err, nil)
 		return
 	}
-
-	defer func() {
-		if err := subscriber.Close(); err != nil {
-			logger.Error("Failed to close subscriber", err, nil)
-			return
-		}
-	}()
-
+	
 	messages, err := subscriber.Subscribe(context.Background(), "progress")
 	for message := range messages {
 		orderID := string(message.Payload)
